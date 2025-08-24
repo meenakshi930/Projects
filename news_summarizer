@@ -1,0 +1,473 @@
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Bias Detective - AI-Powered Media Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-shadow {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .bias-meter {
+            transition: all 0.3s ease;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .focus-visible {
+            outline: 2px solid #000;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body class="min-h-screen gradient-bg">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">News Bias Detective</h1>
+            <p class="text-xl text-white/90">Analyze news articles for bias and get AI-powered summaries</p>
+        </header>
+
+        <!-- Main Content -->
+        <div class="max-w-4xl mx-auto bg-white rounded-xl card-shadow overflow-hidden">
+            <!-- Input Section -->
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Enter News Content</h2>
+                
+                <div class="mb-6">
+                    <div class="flex space-x-4 mb-4">
+                        <button id="url-tab" class="px-4 py-2 bg-blue-600 text-white rounded-lg tab-button active">
+                            URL Input
+                        </button>
+                        <button id="text-tab" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg tab-button">
+                            Paste Article
+                        </button>
+                    </div>
+
+                    <div id="url-input" class="tab-content block">
+                        <input type="url" id="article-url" 
+                               placeholder="https://example.com/news-article" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+
+                    <div id="text-input" class="tab-content hidden">
+                        <textarea id="article-text" 
+                                  placeholder="Paste your news article content here..." 
+                                  rows="6"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                    </div>
+                </div>
+
+                <!-- Tone Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Summary Tone</label>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="tone" value="neutral" checked class="mr-2">
+                            <span>Neutral Summary</span>
+                        </label>
+                        <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="tone" value="facts" class="mr-2">
+                            <span>Fact-Only</span>
+                        </label>
+                        <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="tone" value="simple" class="mr-2">
+                            <span>Explain to a 10-Year-Old</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button id="analyze-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200" style="outline: rgb(0, 0, 0) dotted 3px; outline-offset: 1px;">
+                    Analyze Article
+                </button>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results-section" class="p-6 hidden">
+                <div class="flex items-center justify-center mb-6">
+                    <div class="loading-spinner mr-3"></div>
+                    <span class="text-gray-600">Analyzing content...</span>
+                </div>
+
+                <div id="results-content" class="hidden">
+                    <!-- Bias Meter -->
+                    <div class="mb-8">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Bias Analysis</h3>
+                        <div class="bg-gray-100 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm text-gray-600">Left-Leaning</span>
+                                <span class="text-sm text-gray-600">Neutral</span>
+                                <span class="text-sm text-gray-600">Right-Leaning</span>
+                            </div>
+                            <div class="w-full bg-gray-300 h-3 rounded-full">
+                                <div id="bias-meter" class="bias-meter h-3 bg-gradient-to-r from-blue-400 via-gray-400 to-red-400 rounded-full" style="width: 50%"></div>
+                            </div>
+                            <div id="bias-score" class="text-center mt-2 text-sm font-medium"></div>
+                        </div>
+                    </div>
+
+                    <!-- Summary -->
+                    <div class="mb-6">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">AI Summary</h3>
+                        <div id="summary-content" class="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                            <p class="text-gray-700 leading-relaxed">Your summary will appear here...</p>
+                        </div>
+                    </div>
+
+                    <!-- Key Points -->
+                    <div class="mb-6">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Key Points</h3>
+                        <div id="key-points" class="space-y-3">
+                            <div class="flex items-start">
+                                <div class="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
+                                <span class="text-gray-700">Loading key points...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tone Analysis -->
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Tone Indicators</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="bg-white p-4 rounded-lg border border-gray-200 text-center">
+                                <div class="text-2xl font-bold text-gray-800 mb-1" id="emotional-score">0%</div>
+                                <div class="text-sm text-gray-600">Emotional</div>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg border border-gray-200 text-center">
+                                <div class="text-2xl font-bold text-gray-800 mb-1" id="subjective-score">0%</div>
+                                <div class="text-sm text-gray-600">Subjective</div>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg border border-gray-200 text-center">
+                                <div class="text-2xl font-bold text-gray-800 mb-1" id="positive-score">0%</div>
+                                <div class="text-sm text-gray-600">Positive</div>
+                            </div>
+                            <div class="bg-white p-4 rounded-lg border border-gray-200 text-center">
+                                <div class="text-2xl font-bold text-gray-800 mb-1" id="negative-score">0%</div>
+                                <div class="text-sm text-gray-600">Negative</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- How it Works -->
+        <div class="max-w-4xl mx-auto mt-8 bg-white rounded-xl card-shadow p-6">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">How It Works</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linecap="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold mb-2">Input Analysis</h3>
+                    <p class="text-gray-600 text-sm">Provide a URL or paste article text for comprehensive analysis</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linecap="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold mb-2">Bias Detection</h3>
+                    <p class="text-gray-600 text-sm">AI algorithms analyze language patterns for political bias indicators</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linecap="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold mb-2">Smart Summaries</h3>
+                    <p class="text-gray-600 text-sm">Get customized summaries based on your preferred tone and detail level</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const urlTab = document.getElementById('url-tab');
+        const textTab = document.getElementById('text-tab');
+        const urlInput = document.getElementById('url-input');
+        const textInput = document.getElementById('text-input');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const resultsSection = document.getElementById('results-section');
+        const resultsContent = document.getElementById('results-content');
+        const loadingElement = resultsSection.querySelector('.flex.items-center');
+        
+        // Tab Switching
+        urlTab.addEventListener('click', () => {
+            urlTab.classList.add('active', 'bg-blue-600', 'text-white');
+            urlTab.classList.remove('bg-gray-200', 'text-gray-700');
+            textTab.classList.remove('active', 'bg-blue-600', 'text-white');
+            textTab.classList.add('bg-gray-200', 'text-gray-700');
+            urlInput.classList.remove('hidden');
+            textInput.classList.add('hidden');
+        });
+
+        textTab.addEventListener('click', () => {
+            textTab.classList.add('active', 'bg-blue-600', 'text-white');
+            textTab.classList.remove('bg-gray-200', 'text-gray-700');
+            urlTab.classList.remove('active', 'bg-blue-600', 'text-white');
+            urlTab.classList.add('bg-gray-200', 'text-gray-700');
+            textInput.classList.remove('hidden');
+            urlInput.classList.add('hidden');
+        });
+
+        // Analysis Function
+        analyzeBtn.addEventListener('click', async () => {
+            const articleUrl = document.getElementById('article-url').value;
+            const articleText = document.getElementById('article-text').value;
+            const selectedTone = document.querySelector('input[name="tone"]:checked').value;
+            
+            if ((!articleUrl && !articleText) || (articleUrl && articleText)) {
+                alert('Please provide either a URL or paste article text, but not both.');
+                return;
+            }
+
+            // Show loading
+            resultsSection.classList.remove('hidden');
+            loadingElement.classList.remove('hidden');
+            resultsContent.classList.add('hidden');
+            
+            // Simulate API call with timeout
+            setTimeout(() => {
+                analyzeContent(articleUrl ? articleUrl : articleText, selectedTone, !!articleUrl);
+            }, 2000);
+        });
+
+        function analyzeContent(content, tone, isUrl) {
+            // Hide loading, show results
+            loadingElement.classList.add('hidden');
+            resultsContent.classList.remove('hidden');
+            resultsContent.classList.add('fade-in');
+            
+            // Simulate bias analysis (this would normally come from an API)
+            const biasScore = Math.random() * 100 - 50; // -50 to +50
+            const biasPosition = ((biasScore + 50) / 100) * 100; // Convert to 0-100 scale
+            
+            // Update bias meter
+            const biasMeter = document.getElementById('bias-meter');
+            const biasScoreElement = document.getElementById('bias-score');
+            
+            biasMeter.style.width = `${biasPosition}%`;
+            
+            let biasText = '';
+            let biasColor = '';
+            
+            if (biasScore < -30) {
+                biasText = 'Strong Left-Leaning Bias';
+                biasColor = 'text-blue-600';
+            } else if (biasScore < -10) {
+                biasText = 'Moderate Left-Leaning Bias';
+                biasColor = 'text-blue-500';
+            } else if (biasScore > 30) {
+                biasText = 'Strong Right-Leaning Bias';
+                biasColor = 'text-red-600';
+            } else if (biasScore > 10) {
+                biasText = 'Moderate Right-Leaning Bias';
+                biasColor = 'text-red-500';
+            } else {
+                biasText = 'Relatively Neutral';
+                biasColor = 'text-gray-600';
+            }
+            
+            biasScoreElement.innerHTML = `<span class="${biasColor} font-semibold">${biasText}</span> (Score: ${biasScore.toFixed(1)})`;
+            
+            // Generate summary based on tone
+            const summaryContent = document.getElementById('summary-content');
+            let summaryText = '';
+            
+            switch(tone) {
+                case 'neutral':
+                    summaryText = `This article discusses ${getRandomTopic()}. The content presents ${getRandomAdjective()} perspective on the matter, focusing on ${getRandomAspect()}. The analysis suggests ${getRandomConclusion()} based on the available information.`;
+                    break;
+                case 'facts':
+                    summaryText = `• Event: ${getRandomEvent()}
+• Location: ${getRandomLocation()}
+• Date: Recent development
+• Key Participants: ${getRandomParticipants()}
+• Main Outcome: ${getRandomOutcome()}`;
+                    break;
+                case 'simple':
+                    summaryText = `Imagine this is like a story about ${getRandomSimpleTopic()}. Some people think one way, and other people think another way. The important thing to remember is that ${getRandomSimpleMessage()}. It's like when you learn that there can be different sides to every story!`;
+                    break;
+            }
+            
+            summaryContent.innerHTML = `<p class="text-gray-700 leading-relaxed">${summaryText}</p>`;
+            
+            // Generate key points
+            const keyPointsElement = document.getElementById('key-points');
+            keyPointsElement.innerHTML = '';
+            
+            const points = [
+                `Uses ${getRandomLanguagePattern()} language patterns`,
+                `Emphasizes ${getRandomEmphasis()} aspects`,
+                `References ${getRandomSources()} sources`,
+                `Shows ${getRandomToneIndicator()} tone in key sections`,
+                `Focuses on ${getRandomFocusArea()} as primary concern`
+            ];
+            
+            points.forEach(point => {
+                const pointElement = document.createElement('div');
+                pointElement.className = 'flex items-start';
+                pointElement.innerHTML = `
+                    <div class="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
+                    <span class="text-gray-700">${point}</span>
+                `;
+                keyPointsElement.appendChild(pointElement);
+            });
+            
+            // Update tone scores
+            document.getElementById('emotional-score').textContent = `${Math.floor(Math.random() * 60 + 20)}%`;
+            document.getElementById('subjective-score').textContent = `${Math.floor(Math.random() * 70 + 15)}%`;
+            document.getElementById('positive-score').textContent = `${Math.floor(Math.random() * 50 + 10)}%`;
+            document.getElementById('negative-score').textContent = `${Math.floor(Math.random() * 50 + 10)}%`;
+        }
+
+        // Helper functions for generating random content
+        function getRandomTopic() {
+            const topics = [
+                'political developments', 'economic trends', 'social issues', 
+                'environmental concerns', 'technological advancements', 'international relations'
+            ];
+            return topics[Math.floor(Math.random() * topics.length)];
+        }
+
+        function getRandomAdjective() {
+            const adjectives = ['a balanced', 'a critical', 'an optimistic', 'a cautious', 'a detailed', 'a comprehensive'];
+            return adjectives[Math.floor(Math.random() * adjectives.length)];
+        }
+
+        function getRandomAspect() {
+            const aspects = [
+                'the historical context', 'current implications', 'future projections', 
+                'stakeholder perspectives', 'statistical evidence', 'expert opinions'
+            ];
+            return aspects[Math.floor(Math.random() * aspects.length)];
+        }
+
+        function getRandomConclusion() {
+            const conclusions = [
+                'further discussion is needed', 'multiple viewpoints exist', 
+                'the situation remains complex', 'additional research would be beneficial',
+                'different interpretations are possible'
+            ];
+            return conclusions[Math.floor(Math.random() * conclusions.length)];
+        }
+
+        function getRandomEvent() {
+            const events = [
+                'Policy announcement', 'Economic report release', 'Social movement development',
+                'Environmental study publication', 'Technological breakthrough', 'International agreement'
+            ];
+            return events[Math.floor(Math.random() * events.length)];
+        }
+
+        function getRandomLocation() {
+            const locations = [
+                'National level', 'International scope', 'Regional context',
+                'Local community', 'Global perspective', 'Specific demographic'
+            ];
+            return locations[Math.floor(Math.random() * locations.length)];
+        }
+
+        function getRandomParticipants() {
+            const participants = [
+                'Government officials and citizens', 'Business leaders and consumers',
+                'Researchers and practitioners', 'Activists and policymakers',
+                'Experts and general public'
+            ];
+            return participants[Math.floor(Math.random() * participants.length)];
+        }
+
+        function getRandomOutcome() {
+            const outcomes = [
+                'Ongoing discussion and analysis', 'Policy considerations underway',
+                'Public debate continues', 'Further evaluation needed',
+                'Multiple perspectives emerging'
+            ];
+            return outcomes[Math.floor(Math.random() * outcomes.length)];
+        }
+
+        function getRandomSimpleTopic() {
+            const topics = [
+                'how countries work together', 'why prices change', 
+                'taking care of our planet', 'new inventions helping people',
+                'how communities make decisions', 'understanding different cultures'
+            ];
+            return topics[Math.floor(Math.random() * topics.length)];
+        }
+
+        function getRandomSimpleMessage() {
+            const messages = [
+                'it\'s important to listen to different ideas', 
+                'there are usually many sides to every story',
+                'being curious helps us understand better',
+                'asking questions is a good way to learn',
+                'everyone sees things a little differently'
+            ];
+            return messages[Math.floor(Math.random() * messages.length)];
+        }
+
+        function getRandomLanguagePattern() {
+            const patterns = [
+                'emotional', 'fact-based', 'opinion-oriented', 'neutral', 'persuasive', 'descriptive'
+            ];
+            return patterns[Math.floor(Math.random() * patterns.length)];
+        }
+
+        function getRandomEmphasis() {
+            const emphases = [
+                'historical', 'economic', 'social', 'political', 'cultural', 'environmental'
+            ];
+            return emphases[Math.floor(Math.random() * emphases.length)];
+        }
+
+        function getRandomSources() {
+            const sources = [
+                'official', 'academic', 'media', 'expert', 'public', 'research'
+            ];
+            return sources[Math.floor(Math.random() * sources.length)];
+        }
+
+        function getRandomToneIndicator() {
+            const tones = [
+                'optimistic', 'cautious', 'critical', 'supportive', 'analytical', 'descriptive'
+            ];
+            return tones[Math.floor(Math.random() * tones.length)];
+        }
+
+        function getRandomFocusArea() {
+            const areas = [
+                'economic impact', 'social justice', 'environmental protection',
+                'political stability', 'technological progress', 'cultural preservation'
+            ];
+            return areas[Math.floor(Math.random() * areas.length)];
+        }
+    </script>
+</body>
+</html>
